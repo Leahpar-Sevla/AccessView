@@ -1,76 +1,173 @@
-# AccessView
+<p align="center">
+  <img src="docs/images/hero.png" alt="AccessView" width="100%">
+</p>
 
-Navegador desktop seguro e somente leitura para compartilhamentos Samba
-acessados por uma Tailnet.
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white">
+  <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white">
+  <img alt="SMB" src="https://img.shields.io/badge/Protocol-SMB%2FSamba-2878C8">
+  <img alt="Security" src="https://img.shields.io/badge/Mode-Read--only-287A4D">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.10.1-68509A">
+  <img alt="License" src="https://img.shields.io/badge/license-Proprietary-8A6728">
+</p>
 
-O AccessView foi desenvolvido para simplificar a consulta e o download de
-arquivos corporativos sem mapear unidades de rede, salvar credenciais ou
-expor funções de alteração e exclusão.
+<p align="center">
+  Navegador desktop seguro e somente leitura para compartilhamentos Samba
+  acessados por uma Tailnet.
+</p>
 
 > Software pertencente à Click's da Serra. Desenvolvido por Raphael Alves.
 
+## Visão geral
+
+O AccessView simplifica a consulta e o download de arquivos corporativos sem
+mapear unidades de rede, salvar credenciais ou disponibilizar funções de
+alteração e exclusão.
+
+Ele cria uma sessão SMB própria, conecta diretamente ao servidor configurado
+e apresenta os compartilhamentos em uma interface desktop moderna para
+Windows.
+
+## Regra central
+
+```text
+O AccessView apenas visualiza e baixa arquivos.
+
+Permissões reais continuam sendo controladas pelo Samba e pela Tailnet.
+```
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    U[Usuário Windows] -->|Credenciais Samba| A[AccessView]
+    A -->|SMB TCP 445 pela Tailnet| S[Servidor Samba]
+    S --> R[Compartilhamentos autorizados]
+    R -->|Listagem e leitura| A
+    A -->|Download escolhido| D[Pasta local]
+
+    Z[Pacote ZIP de atualização] --> V[Validação de versão e SHA-256]
+    V --> B[Backup da versão instalada]
+    B --> N[Substituição dos arquivos]
+    N --> O[Reabertura do AccessView]
+    N -. falha .-> RB[Rollback automático]
+```
+
+## Casos de uso
+
+- consulta de arquivos em servidores internos;
+- acesso administrativo a backups;
+- navegação em acervos fotográficos;
+- download controlado por supervisores;
+- terminais Windows conectados por Tailscale;
+- ambientes que precisam ocultar operações de escrita do usuário final.
+
+## Recursos
+
+### Navegação
+
+- árvore lateral carregada sob demanda;
+- caminho atual destacado em verde;
+- ramificações fora de uso recolhidas automaticamente;
+- botão Home e navegação para a pasta anterior;
+- modos de miniaturas e detalhes;
+- miniaturas reais de imagens;
+- seleção múltipla com `Ctrl` e `Shift`.
+
+### Segurança
+
+- operação estritamente somente leitura;
+- credenciais mantidas apenas durante a sessão;
+- senha oculta por padrão, com controle de visualização;
+- sessão SMB encerrada no logout;
+- `config.json` local e ignorado pelo Git;
+- logs sem registro da senha;
+- nenhuma unidade de rede é mapeada no Windows.
+
+### Download
+
+- download individual ou em lote;
+- progresso por bytes transferidos;
+- nomes duplicados preservados com sufixo automático;
+- auditoria local de início, sucesso e falha.
+
+### Atualização
+
+- pacote ZIP sem reinstalação;
+- validação de aplicativo, versão e SHA-256;
+- elevação administrativa somente no atualizador;
+- backup automático;
+- rollback em caso de erro;
+- preservação obrigatória do `config.json`;
+- bloqueio de pacote antigo ou já instalado.
+
 ## Interface
+
+### Login seguro
 
 ![Tela de login do AccessView](docs/images/login.png)
 
-## Principais recursos
+### Informações e atualização
 
-- autenticação individual com usuário e senha Samba;
-- senha mantida somente em memória durante a sessão;
-- botão para mostrar ou ocultar a senha;
-- navegação por árvore lateral com caminho ativo destacado;
-- pastas azuis e interface grafite;
-- visualização por miniaturas ou detalhes;
-- miniaturas reais de imagens;
-- seleção múltipla e download em lote;
-- operação estritamente somente leitura;
-- logs locais de login, navegação e download;
-- atualização por pacote ZIP sem reinstalação;
-- validação de versão e integridade SHA-256;
-- backup e rollback automático durante atualizações;
-- preservação obrigatória do `config.json`.
+<p align="center">
+  <img src="docs/images/about.png" alt="Informações do AccessView" width="430">
+</p>
 
-## Atualizador integrado
+### Confirmação da atualização
 
-![Janela de informações e atualização](docs/images/about.png)
+<p align="center">
+  <img src="docs/images/update.png" alt="Atualização do AccessView" width="430">
+</p>
 
-O aplicativo aceita pacotes `AccessView-Update-vX.Y.Z.zip`, fecha o processo,
-solicita elevação administrativa, cria um backup, substitui os arquivos e abre
-novamente. Pacotes repetidos ou antigos são rejeitados.
+## Estrutura do projeto
 
-![Confirmação de atualização](docs/images/update.png)
+```text
+AccessView/
+├── app.py                         interface e cliente SMB
+├── updater.py                     atualizador externo
+├── create_update_package.py       criação e hashes do pacote ZIP
+├── AccessView.iss                 instalador Inno Setup
+├── AccessView.ico                 ícone do Windows
+├── AccessView.png                 logo da interface
+├── config.example.json            configuração sem dados reais
+├── BUILD-RELEASE.bat              build completo
+├── GERAR-ATUALIZACAO.bat          build de atualização
+├── docs/                          documentação e imagens
+├── tests/                         testes automatizados
+└── .github/                       CI, build e templates
+```
 
 ## Requisitos
 
-### Uso do aplicativo
+### Para executar
 
 - Windows 10 ou Windows 11;
-- acesso à Tailnet configurada;
-- porta TCP 445 disponível até o servidor;
+- Tailnet ativa;
+- acesso TCP à porta 445 do servidor;
 - conta Samba autorizada.
 
-### Desenvolvimento e build
+### Para desenvolver e compilar
 
 - Python 3.11 ou superior;
 - Inno Setup 6 para gerar o instalador;
-- dependências descritas em `requirements.txt`.
+- dependências de `requirements.txt`.
 
-## Executar pelo código-fonte
+## Início rápido
 
-Clone o repositório e entre na pasta:
+Clone o repositório:
 
 ```powershell
-git clone https://github.com/SEU-USUARIO/AccessView.git
+git clone https://github.com/Leahpar-Sevla/AccessView.git
 cd AccessView
 ```
 
-Prepare a configuração local:
+Crie a configuração local:
 
 ```powershell
 copy config.example.json config.json
 ```
 
-Edite `config.json`:
+Exemplo:
 
 ```json
 {
@@ -84,31 +181,33 @@ Edite `config.json`:
 }
 ```
 
-Depois execute:
+Prepare e execute:
 
 ```text
 PREPARAR-AMBIENTE.bat
 EXECUTAR.bat
 ```
 
-O arquivo `config.json` é ignorado pelo Git para evitar o envio acidental de
-endereços e nomes internos.
-
-## Gerar executáveis
-
-Para gerar `AccessView.exe` e `AccessViewUpdater.exe`:
+## Gerar os executáveis
 
 ```text
 build_exe.bat
 ```
 
-Os arquivos serão criados em:
+Resultado:
 
 ```text
-dist\AccessView
+dist\AccessView\AccessView.exe
+dist\AccessView\AccessViewUpdater.exe
 ```
 
-## Gerar instalador e pacote de atualização
+## Gerar a release completa
+
+Opcionalmente defina a senha do instalador apenas na sessão local:
+
+```powershell
+$env:ACCESSVIEW_INSTALLER_PASSWORD = "uma-senha-nova-e-forte"
+```
 
 Execute:
 
@@ -123,60 +222,66 @@ output\AccessView-Setup-v0.10.1.exe
 output\AccessView-Update-v0.10.1.zip
 ```
 
-O instalador pode ser protegido por senha sem gravá-la no repositório:
+Sem a variável de ambiente, o instalador é gerado sem senha.
 
-```powershell
-$env:ACCESSVIEW_INSTALLER_PASSWORD = "defina-uma-senha-forte"
-.\BUILD-RELEASE.bat
-```
-
-Sem essa variável, o instalador é gerado sem senha e sem criptografia.
-
-## Gerar apenas uma atualização futura
+## Gerar atualizações futuras
 
 1. aumente `APP_VERSION` no `app.py`;
-2. execute `GERAR-ATUALIZACAO.bat`.
-
-O pacote será salvo em:
+2. atualize os metadados do instalador quando necessário;
+3. execute `GERAR-ATUALIZACAO.bat`.
 
 ```text
 ATUALIZACOES\vX.Y.Z\AccessView-Update-vX.Y.Z.zip
 ```
 
-Consulte [docs/UPDATE_GUIDE.md](docs/UPDATE_GUIDE.md) para o fluxo completo.
+Consulte o [guia de atualização](docs/UPDATE_GUIDE.md).
 
-## Estrutura
+## Logs
+
+Aplicativo:
 
 ```text
-AccessView
-├── app.py                         interface e cliente SMB
-├── updater.py                     atualizador externo
-├── create_update_package.py       geração e assinatura SHA-256 do ZIP
-├── AccessView.iss                 instalador Inno Setup
-├── BUILD-RELEASE.bat              build completo
-├── GERAR-ATUALIZACAO.bat          build de atualização
-├── config.example.json            configuração de exemplo
-├── docs                           documentação e imagens
-└── .github                        workflows e templates
+C:\ProgramData\AccessView\logs
 ```
 
-## Segurança
+Atualizador:
 
-- não publique `config.json`;
-- não grave senhas no código ou nos BATs;
-- configure permissões de leitura também no servidor Samba;
-- mantenha regras restritivas na Tailnet;
-- use contas individuais para auditoria;
-- trate a assinatura SHA-256 como verificação de integridade, não como
-  assinatura criptográfica de identidade.
+```text
+C:\ProgramData\AccessView\updates
+```
 
-Consulte [SECURITY.md](SECURITY.md) antes de publicar ou distribuir releases.
+## Segurança e publicação
 
-## Histórico
+Não publique:
 
-Veja [CHANGELOG.md](CHANGELOG.md).
+```text
+config.json
+IPs reais da Tailnet
+nomes internos de servidores
+credenciais
+logs de produção
+senhas do instalador
+pacotes privados de atualização
+```
+
+Use arquivos `.example` e placeholders. Consulte [SECURITY.md](SECURITY.md).
+
+## Status do projeto
+
+Versão atual: **0.10.1**
+
+O projeto está funcional e em evolução. Teste novas builds e pacotes de
+atualização em um terminal sem dados críticos antes da distribuição em
+produção.
+
+## Documentação
+
+- [Guia de atualização](docs/UPDATE_GUIDE.md)
+- [Publicação no GitHub](docs/GITHUB_PUBLISH.md)
+- [Histórico de versões](CHANGELOG.md)
+- [Política de segurança](SECURITY.md)
+- [Contribuição](CONTRIBUTING.md)
 
 ## Licença
 
-Este projeto é disponibilizado como código-fonte proprietário. Consulte
-[LICENSE.md](LICENSE.md).
+Código-fonte proprietário da Click's da Serra. Consulte [LICENSE.md](LICENSE.md).
